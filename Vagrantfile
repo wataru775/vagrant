@@ -53,6 +53,36 @@ Vagrant.configure("2") do |config|
   SHELL
 
   config.vm.provision "shell", inline: <<-SHELL
+    # rpm -Uvh https://archives.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm  2> /dev/null
+    # wget http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+    # rpm -Uvh remi-release-6.rpm  2> /dev/null
+    # yum -y -q install --enablerepo=remi --enablerepo=remi-php73 php php-mbstring php-mcrypt php-pear php-mysqli php-imagick php-pecl-xdebug php-pdo  2> /dev/null
+    yum -y install autoconf automake libtool python-devel
+
+    curl --silent  https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.9.12/libxml2-v2.9.12.tar.gz -o libxml2-v2.9.12.tar.gz
+    tar zfx libxml2-v2.9.12.tar.gz -C /usr/local/src/
+    cd /usr/local/src/libxml2-v2.9.12
+    ./autogen.sh
+    make
+    make install
+
+    cd
+
+    curl --silent https://www.php.net/distributions/php-7.3.31.tar.gz -o php-7.3.31.tar.gz
+    tar zfx php-7.3.31.tar.gz -C /usr/local/src/
+    cd /usr/local/src/php-7.3.31/
+    ./configure --with-apxs2=/usr/local/apache2/bin/apxs
+    make
+    make install
+
+    cd
+
+    cp /vagrant/vagrant/conf/apache2/httpd.conf /usr/local/apache2/conf/
+    
+    /usr/local/apache2/bin/apachectl restart
+  SHELL
+
+  config.vm.provision "shell", inline: <<-SHELL
 
     # MySQL Serverがすでに入っていれば処理しない
     if sudo yum list installed mysql-community-server | grep mysql; then exit; fi
@@ -71,5 +101,6 @@ Vagrant.configure("2") do |config|
     /usr/local/apache2/bin/apachectl -v
     echo MySQL Server: `mysql --defaults-extra-file=/vagrant/vagrant/conf/mysql/sql.cnf -e "select version();" | tail -n 1 &2>/dev/null`
     echo "####################################"
+    /usr/local/bin/php -v
   SHELL
 end
