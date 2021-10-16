@@ -12,6 +12,10 @@ Vagrant.configure("2") do |config|
    config.vm.synced_folder "./public", "/usr/local/apache2/htdocs/", type: "virtualbox"
 
    config.vm.provision "shell", inline: <<-SHELL
+
+   # Apache HTTP Serverがすでに入っていれば処理しない
+   if /usr/local/apache2/bin/apachectl -v; then exit; fi
+
     yum -y -q install gcc-c++ expat-devel
 
     curl --silent -o pcre-8.45.tar.gz https://free.nchc.org.tw/osdn//sfnet/p/pc/pcre/pcre/8.45/pcre-8.45.tar.gz
@@ -43,9 +47,7 @@ Vagrant.configure("2") do |config|
     make
     make install
 
-    sudo /usr/local/apache2/bin/apachectl start
-    /usr/local/apache2/bin/apachectl -v
-
+    sudo /usr/local/apache2/bin/apachectl restart
     cd
   SHELL
 
