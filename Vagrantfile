@@ -10,6 +10,7 @@ Vagrant.configure("2") do |config|
    'yum -y update'
    ]
    config.vm.synced_folder "./public", "/usr/local/apache2/htdocs/", type: "virtualbox"
+   config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
 
    config.vm.provision "shell", inline: <<-SHELL
 
@@ -52,12 +53,23 @@ Vagrant.configure("2") do |config|
   SHELL
 
   config.vm.provision "shell", inline: <<-SHELL
+
+    # MySQL Serverがすでに入っていれば処理しない
+    if sudo yum list installed mysql-community-server | grep mysql; then exit; fi
     yum install -y https://dev.mysql.com/get/mysql80-community-release-el6-3.noarch.rpm
     yum install -y mysql-server
     chkconfig mysqld on
-    service mysqld start
-    mysql -uroot --password=`grep 'temporary password' /var/log/mysqld.log | awk '{ print $13 }'` --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'YfK*tVav.ywZ6T3zJ-MZ';"
-    mysql -uroot --password=YfK*tVav.ywZ6T3zJ-MZ --connect-expired-password -e "show variables like 'validate_password%';"
+    service mysqld restart
+    # デフォルトパスワードを変更する
+    export MYSQL_TMP_PASSWD=`grep 'temporary password' /var/log/mysqld.log | awk '{ print $13 }'`
+    export MYSQL_PASSWD=`grep password /vagrant/vagrant/conf/mysql/sql.cnf | awk '{print $3}'`
+    mysql -uroot --password=$MYSQL_TMP_PASSWD --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_PASSWD';"
+  SHELL
 
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "########### Server #################"
+    /usr/local/apache2/bin/apachectl -v
+    echo MySQL Server: `mysql --defaults-extra-file=/vagrant/vagrant/conf/mysql/sql.cnf -e "select version();" | tail -n 1 &2>/dev/null`
+    echo "####################################"
   SHELL
 end
