@@ -49,4 +49,13 @@ Vagrant.configure("2") do |config|
     cd
   SHELL
 
+  config.vm.provision "shell", inline: <<-SHELL
+    yum install -y https://dev.mysql.com/get/mysql80-community-release-el6-3.noarch.rpm
+    yum install -y mysql-server
+    chkconfig mysqld on
+    service mysqld start
+    mysql -uroot --password=`grep 'temporary password' /var/log/mysqld.log | awk '{ print $13 }'` --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'YfK*tVav.ywZ6T3zJ-MZ';"
+    mysql -uroot --password=YfK*tVav.ywZ6T3zJ-MZ --connect-expired-password -e "show variables like 'validate_password%';"
+
+  SHELL
 end
